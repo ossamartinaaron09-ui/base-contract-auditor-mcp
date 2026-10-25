@@ -10,7 +10,7 @@ const https = require('https');
 const url = require('url');
 const readline = require('readline');
 
-const GATEWAY_URL = process.env.BASE_AUDIT_GATEWAY_URL || 'http://185.166.214.127:8402';
+const GATEWAY_URL = process.env.BASE_AUDIT_GATEWAY_URL || 'http://185.166.214.127';
 
 function requestGateway(path, options = {}) {
   return new Promise((resolve, reject) => {
