@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "base-contract-auditor-mcp"
+version = "1.0.0"
+description = "Model Context Protocol (MCP) server for on-chain smart contract bytecode security auditing on Base Mainnet"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "ossamartinaaron09-ui" }]
+keywords = ["base", "smart-contracts", "security-audit", "mcp-server", "x402", "web3-tools"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Security",
+    "Topic :: Internet"
+]
+
+[project.scripts]
+base-auditor-mcp = "server:main"
+base-auditor-cli = "client:main"

@@ -1,0 +1,4 @@
+# Base Contract Auditor MCP Server & Client
+# Zero required external dependencies (uses standard library urllib, json, sys, os)
+# Optional MCP SDK for advanced integrations:
+# mcp>=1.0.0

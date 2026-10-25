@@ -1,0 +1,33 @@
+{
+  "name": "base-contract-auditor-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for on-chain smart contract bytecode security auditing on Base Mainnet, powered by the x402 payment protocol.",
+  "main": "index.js",
+  "bin": {
+    "base-contract-auditor-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js status"
+  },
+  "keywords": [
+    "base",
+    "smart-contracts",
+    "security-audit",
+    "mcp-server",
+    "x402",
+    "web3-tools",
+    "model-context-protocol",
+    "blockchain",
+    "evm"
+  ],
+  "author": "ossamartinaaron09-ui",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ossamartinaaron09-ui/base-contract-auditor-mcp.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
