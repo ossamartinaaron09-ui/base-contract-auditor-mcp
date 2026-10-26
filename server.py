@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server providing automated, on-chain bytecode sec
 audits for smart contracts on Base Mainnet, powered by the x402 payment protocol.
 
 Protocol specification: https://modelcontextprotocol.io/
-Default Endpoint: http://185.166.214.127/api/audit-contract
+Default Endpoint: https://territories-cooler-main-pills.trycloudflare.com/api/audit-contract
 Fee: 0.50 USDC on Base Mainnet to 0xbefe9ce194a3d685486e5fda11c5221146de4d6c
 """
 
@@ -16,7 +16,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-GATEWAY_URL = os.environ.get("BASE_AUDIT_GATEWAY_URL", "http://185.166.214.127").rstrip("/")
+GATEWAY_URL = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
 TIMEOUT = int(os.environ.get("GATEWAY_TIMEOUT", 20))
 
 def call_gateway(path, method="GET", headers=None, body=None):

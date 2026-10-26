@@ -62,7 +62,7 @@ Add the server to your `claude_desktop_config.json`:
         "/absolute/path/to/base-contract-auditor-mcp/server.py"
       ],
       "env": {
-        "BASE_AUDIT_GATEWAY_URL": "http://185.166.214.127"
+        "BASE_AUDIT_GATEWAY_URL": "https://territories-cooler-main-pills.trycloudflare.com"
       }
     }
   }
@@ -80,7 +80,7 @@ Add the server to your `claude_desktop_config.json`:
         "mcp"
       ],
       "env": {
-        "BASE_AUDIT_GATEWAY_URL": "http://185.166.214.127"
+        "BASE_AUDIT_GATEWAY_URL": "https://territories-cooler-main-pills.trycloudflare.com"
       }
     }
   }

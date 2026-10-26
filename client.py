@@ -17,7 +17,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-DEFAULT_GATEWAY = os.environ.get("BASE_AUDIT_GATEWAY_URL", "http://185.166.214.127").rstrip("/")
+DEFAULT_GATEWAY = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
 
 class BaseAuditorClient:
     def __init__(self, gateway_url=None, timeout=20):
