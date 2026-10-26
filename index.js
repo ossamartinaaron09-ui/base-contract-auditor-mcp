@@ -10,52 +10,65 @@ const https = require('https');
 const url = require('url');
 const readline = require('readline');
 
-const GATEWAY_URL = process.env.BASE_AUDIT_GATEWAY_URL || 'https://territories-cooler-main-pills.trycloudflare.com';
+const PRIMARY_GATEWAY = process.env.BASE_AUDIT_GATEWAY_URL || "https://territories-cooler-main-pills.trycloudflare.com";
+const FALLBACK_GATEWAY = "http://185.166.214.127";
 
-function requestGateway(path, options = {}) {
-  return new Promise((resolve, reject) => {
-    const fullUrl = `${GATEWAY_URL}${path}`;
-    const parsed = new URL(fullUrl);
-    const client = parsed.protocol === 'https:' ? https : http;
+function requestSingleGateway(baseUrl, path, options = {}) {
+  return new Promise((resolve) => {
+    try {
+      const fullUrl = `${baseUrl.replace(/\/$/, "")}${path}`;
+      const parsed = new URL(fullUrl);
+      const client = parsed.protocol === "https:" ? https : http;
 
-    const reqOptions = {
-      hostname: parsed.hostname,
-      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
-      path: parsed.pathname + parsed.search,
-      method: options.method || 'GET',
-      headers: {
-        'User-Agent': 'BaseContractAuditorMCP-Node/1.0.0',
-        ...(options.headers || {})
-      },
-      timeout: 20000
-    };
+      const reqOptions = {
+        hostname: parsed.hostname,
+        port: parsed.port || (parsed.protocol === "https:" ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: options.method || "GET",
+        headers: {
+          "User-Agent": "BaseContractAuditorMCP-Node/1.0.0",
+          ...(options.headers || {})
+        },
+        timeout: 10000
+      };
 
-    const req = client.request(reqOptions, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          resolve({ status: res.statusCode, data: JSON.parse(data) });
-        } catch (e) {
-          resolve({ status: res.statusCode, data: { raw: data, error: 'Non-JSON response' } });
-        }
+      const req = client.request(reqOptions, (res) => {
+        let data = "";
+        res.on("data", chunk => data += chunk);
+        res.on("end", () => {
+          try {
+            resolve({ status: res.statusCode, data: JSON.parse(data) });
+          } catch (e) {
+            resolve({ status: res.statusCode, data: { raw: data, error: "Non-JSON response" } });
+          }
+        });
       });
-    });
 
-    req.on('timeout', () => {
-      req.destroy();
-      resolve({ status: 504, data: { error: 'Gateway timeout' } });
-    });
+      req.on("timeout", () => {
+        req.destroy();
+        resolve({ status: 504, data: { error: "Gateway timeout" } });
+      });
 
-    req.on('error', (err) => {
-      resolve({ status: 503, data: { error: `Connection failed: ${err.message}` } });
-    });
+      req.on("error", (err) => {
+        resolve({ status: 503, data: { error: `Connection failed: ${err.message}` } });
+      });
 
-    if (options.body) {
-      req.write(JSON.stringify(options.body));
+      if (options.body) {
+        req.write(JSON.stringify(options.body));
+      }
+      req.end();
+    } catch (err) {
+      resolve({ status: 503, data: { error: `Setup error: ${err.message}` } });
     }
-    req.end();
   });
+}
+
+async function requestGateway(path, options = {}) {
+  const primaryRes = await requestSingleGateway(PRIMARY_GATEWAY, path, options);
+  if (primaryRes.status === 502 || primaryRes.status === 503 || primaryRes.status === 504) {
+    return await requestSingleGateway(FALLBACK_GATEWAY, path, options);
+  }
+  return primaryRes;
 }
 
 const TOOLS = [

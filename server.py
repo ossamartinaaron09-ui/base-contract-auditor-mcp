@@ -16,73 +16,45 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-GATEWAY_URL = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
-TIMEOUT = int(os.environ.get("GATEWAY_TIMEOUT", 20))
+PRIMARY_GATEWAY = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
+FALLBACK_GATEWAY = "http://185.166.214.127"
+TIMEOUT = int(os.environ.get("GATEWAY_TIMEOUT", 12))
 
 def call_gateway(path, method="GET", headers=None, body=None):
-    url = f"{GATEWAY_URL}{path}"
-    req_headers = {"User-Agent": "BaseContractAuditorMCP/1.0.0"}
-    if headers:
-        req_headers.update(headers)
-    
-    data = json.dumps(body).encode("utf-8") if body else None
-    if body and "Content-Type" not in req_headers:
-        req_headers["Content-Type"] = "application/json"
+    gateways = [PRIMARY_GATEWAY]
+    if FALLBACK_GATEWAY not in gateways:
+        gateways.append(FALLBACK_GATEWAY)
 
-    req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
-    try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-            content = resp.read().decode("utf-8")
-            return resp.status, json.loads(content)
-    except urllib.error.HTTPError as e:
-        content = e.read().decode("utf-8")
+    last_error = None
+    for gw in gateways:
+        url = f"{gw}{path}"
+        req_headers = {"User-Agent": "BaseContractAuditorMCP/1.0.0"}
+        if headers:
+            req_headers.update(headers)
+        
+        data = json.dumps(body).encode("utf-8") if body else None
+        if body and "Content-Type" not in req_headers:
+            req_headers["Content-Type"] = "application/json"
+
+        req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
         try:
-            return e.code, json.loads(content)
-        except Exception:
-            return e.code, {"error": f"HTTP {e.code}: {e.reason}", "raw": content}
-    except Exception as e:
-        return 503, {"error": f"Gateway unreachable at {GATEWAY_URL}: {str(e)}"}
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                content = resp.read().decode("utf-8")
+                return resp.status, json.loads(content)
+        except urllib.error.HTTPError as e:
+            content = e.read().decode("utf-8")
+            if e.code in (502, 503, 504) and gw != FALLBACK_GATEWAY:
+                last_error = f"Gateway HTTP {e.code}"
+                continue
+            try:
+                return e.code, json.loads(content)
+            except Exception:
+                return e.code, {"error": f"HTTP {e.code}: {e.reason}", "raw": content}
+        except Exception as e:
+            last_error = e
+            continue
 
-def tool_get_payment_info(arguments):
-    contract_addr = arguments.get("contract_address", "")
-    path = f"/api/audit-contract?address={urllib.parse.quote(contract_addr)}" if contract_addr else "/api/audit-contract"
-    code, data = call_gateway(path, method="GET")
-    
-    # Static fallback info if gateway returns connection error
-    if code == 503:
-        return {
-            "protocol": "x402-v1",
-            "service": "Smart Contract Bytecode Audit (Base)",
-            "target_contract": contract_addr,
-            "price_usdc": 0.50,
-            "accepted_token": "USDC (Base Mainnet)",
-            "vault_evm_base": "0xbefe9ce194a3d685486e5fda11c5221146de4d6c",
-            "usdc_contract_base": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-            "instruction": "Send 0.50 USDC on Base to vault_evm_base (0xbefe9ce194a3d685486e5fda11c5221146de4d6c) and supply the transaction hash to audit_contract."
-        }
-    return data
-
-def tool_audit_contract(arguments):
-    contract_addr = arguments.get("contract_address", "").strip()
-    tx_hash = arguments.get("tx_hash", "").strip()
-
-    if not contract_addr or not contract_addr.startswith("0x") or len(contract_addr) != 42:
-        return {"error": "Invalid EVM contract address format. Must be a 42-character hex string starting with 0x."}
-
-    if not tx_hash or not tx_hash.startswith("0x") or len(tx_hash) != 66:
-        return {
-            "error": "Invalid or missing transaction hash.",
-            "instruction": "Provide the 66-character Base transaction hash (starting with 0x) of your 0.50 USDC transfer to 0xbefe9ce194a3d685486e5fda11c5221146de4d6c."
-        }
-
-    path = f"/api/audit-contract?address={urllib.parse.quote(contract_addr)}"
-    headers = {"X-PAYMENT-TX": tx_hash}
-    code, data = call_gateway(path, method="GET", headers=headers)
-    return data
-
-def tool_check_status(arguments):
-    code, data = call_gateway("/status", method="GET")
-    return data
+    return 503, {"error": f"All gateway endpoints unreachable: {str(last_error)}"}
 
 TOOLS = [
     {

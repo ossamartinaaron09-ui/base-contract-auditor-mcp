@@ -178,3 +178,11 @@ node index.js audit 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 --tx 0x4f12ab...
 ## 📄 License
 
 This repository is licensed under the [MIT License](LICENSE).
+
+## High-Availability Dual-Gateway Redundancy
+
+The server and client library include automatic immediate fallback:
+- **Primary Endpoint (HTTPS):** `https://territories-cooler-main-pills.trycloudflare.com` (Cloudflare Tunnel).
+- **Fallback Endpoint (HTTP):** `http://185.166.214.127` (Port 80 static IP).
+
+If Cloudflare rotates or updates the quick tunnel URL, requests automatically failover to the static server IP within milliseconds.

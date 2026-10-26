@@ -17,35 +17,49 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-DEFAULT_GATEWAY = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
+PRIMARY_GATEWAY = os.environ.get("BASE_AUDIT_GATEWAY_URL", "https://territories-cooler-main-pills.trycloudflare.com").rstrip("/")
+FALLBACK_GATEWAY = "http://185.166.214.127"
 
 class BaseAuditorClient:
-    def __init__(self, gateway_url=None, timeout=20):
-        self.gateway_url = (gateway_url or DEFAULT_GATEWAY).rstrip("/")
+    def __init__(self, gateway_url=None, fallback_url=FALLBACK_GATEWAY, timeout=12):
+        self.gateway_url = (gateway_url or PRIMARY_GATEWAY).rstrip("/")
+        self.fallback_url = (fallback_url or FALLBACK_GATEWAY).rstrip("/")
         self.timeout = timeout
 
     def _request(self, path, method="GET", headers=None, body=None):
-        url = f"{self.gateway_url}{path}"
-        req_headers = {"User-Agent": "BaseAuditorClient/1.0.0"}
-        if headers:
-            req_headers.update(headers)
+        gateways = [self.gateway_url]
+        if self.fallback_url and self.fallback_url not in gateways:
+            gateways.append(self.fallback_url)
 
-        data = json.dumps(body).encode("utf-8") if body else None
-        if body and "Content-Type" not in req_headers:
-            req_headers["Content-Type"] = "application/json"
+        last_error = None
+        for gw in gateways:
+            url = f"{gw}{path}"
+            req_headers = {"User-Agent": "BaseAuditorClient/1.0.0"}
+            if headers:
+                req_headers.update(headers)
 
-        req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                return resp.status, json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            raw = e.read().decode("utf-8")
+            data = json.dumps(body).encode("utf-8") if body else None
+            if body and "Content-Type" not in req_headers:
+                req_headers["Content-Type"] = "application/json"
+
+            req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
             try:
-                return e.code, json.loads(raw)
-            except Exception:
-                return e.code, {"error": f"HTTP {e.code}", "detail": raw}
-        except Exception as e:
-            return 503, {"error": f"Connection failed to {self.gateway_url}: {str(e)}"}
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    return resp.status, json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                raw = e.read().decode("utf-8")
+                if e.code in (502, 503, 504) and gw != self.fallback_url:
+                    last_error = f"Gateway HTTP {e.code}"
+                    continue
+                try:
+                    return e.code, json.loads(raw)
+                except Exception:
+                    return e.code, {"error": f"HTTP {e.code}", "detail": raw}
+            except Exception as e:
+                last_error = e
+                continue
+
+        return 503, {"error": f"All gateway endpoints unreachable: {str(last_error)}"}
 
     def get_status(self):
         """Returns the gateway health and service directory."""
