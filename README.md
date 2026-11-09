@@ -5,6 +5,7 @@
 [![Protocol](https://img.shields.io/badge/Protocol-Model_Context_Protocol_(MCP)-8A2BE2.svg)](https://modelcontextprotocol.io/)
 [![Payment Standard](https://img.shields.io/badge/Payment-x402_Microtransactions-green.svg)](https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.3)
 [![Auditor Fee](https://img.shields.io/badge/Fee-0.50_USDC-2775CA.svg)](https://basescan.org/address/0xbefe9ce194a3d685486e5fda11c5221146de4d6c)
+[![GitHub Action](https://img.shields.io/badge/CI%2FCD-GitHub_Action-2088FF.svg)](action.yml)
 
 A production-grade **Model Context Protocol (MCP)** server and CLI client that enables AI assistants (Claude Desktop, Cursor, Windsurf, Antigravity) to perform automated, on-chain bytecode security audits of EVM smart contracts deployed on **Base Mainnet**.
 
@@ -39,6 +40,30 @@ The audit engine implements the HTTP 402 Payment Required pattern on-chain:
    0x833589fcd6edb6e08f4c7c32d4f71b54bda02913
    ```
 4. **Verification Mechanism:** The engine queries Base RPC logs to verify that the specified transaction hash (`X-PAYMENT-TX`) contains an ERC-20 `Transfer` of $\ge 0.50$ USDC to the vault address before returning the cryptographic audit verdict.
+
+---
+
+## ⚡ GitHub Actions Integration (Automated CI/CD)
+
+Integrate instant security audits into your GitHub repositories on every commit and Pull Request with zero external setup:
+
+```yaml
+name: 'Smart Contract Security Audit'
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit Contracts
+        uses: ossamartinaaron09-ui/base-contract-auditor-mcp@main
+        with:
+          contract_address: '' # Optional on-chain deployed address on Base
+          fail_on_critical: 'false'
+```
+
+The action automatically inspects repository Solidity files, surfaces critical opcode risks in `$GITHUB_STEP_SUMMARY`, and connects to the on-chain x402 Base Mainnet verification gateway.
 
 ---
 
